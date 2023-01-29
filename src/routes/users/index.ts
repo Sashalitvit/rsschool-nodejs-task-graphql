@@ -102,7 +102,25 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const user = await fastify.db.users.findOne({ key: 'id', equals: request.body.userId });
+
+      if (user === null) {
+        throw fastify.httpErrors.notFound('User does not exsist');
+      }
+
+      const updatedUserId = await fastify.db.users.change(
+        request.body.userId,
+        {
+          subscribedToUserIds: [
+            ...user.subscribedToUserIds,
+            request.params.id,
+          ],
+        }
+      );
+
+      return updatedUserId;
+    }
   );
 
   fastify.post(
