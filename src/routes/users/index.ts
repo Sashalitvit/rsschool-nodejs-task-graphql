@@ -22,7 +22,16 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const userById = await fastify.db.users.findOne({key: 'id', equals: request.params.id});
+
+      if (userById === null) {
+
+        throw fastify.httpErrors.notFound("User does not found");
+      }
+
+      return userById;
+    }
   );
 
   fastify.post(
