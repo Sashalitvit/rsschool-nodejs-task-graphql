@@ -131,7 +131,28 @@ const plugin: FastifyPluginAsyncJsonSchemaToTs = async (
         params: idParamSchema,
       },
     },
-    async function (request, reply): Promise<UserEntity> {}
+    async function (request, reply): Promise<UserEntity> {
+      const user = await fastify.db.users.findOne({ key: 'id', equals: request.body.userId });
+
+      if (user === null) {
+        throw fastify.httpErrors.notFound('User does not exsist');
+      }
+
+      const updatedSubscriptions = user.subscribedToUserIds.filter((id) => id !== request.params.id);
+
+      if (updatedSubscriptions.length === user.subscribedToUserIds.length) {
+        throw fastify.httpErrors.badRequest('User is not subscribed');
+      }
+
+      const updatedUserUss = await fastify.db.users.change(
+        request.body.userId,
+        {
+          subscribedToUserIds: updatedSubscriptions,
+        }
+      );
+
+      return updatedUserUss;
+    }
   );
 
   fastify.patch(
